@@ -76,5 +76,11 @@ export async function apply(ctx: Context, config: Config) {
 			// TODO: Change to ctx.on('message', ...)
 			cmd.shortcut(new RegExp(`^${escapeRegExp(h.escape(config.prefix))} (.+)$`, 'm'), { args: ['$1'] });
 		}
+
+		ctx.command('evaluate.restart', '重启子线程', { hidden: true, authority: 5 })
+			.action(async () => {
+				await ctx.runner.restart();
+				return '子线程已重启。';
+			});
 	});
 }

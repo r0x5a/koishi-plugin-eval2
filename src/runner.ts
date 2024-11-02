@@ -25,6 +25,8 @@ export default class Runner extends Service {
 	readonly logger = this.ctx.logger('runner');
 
 	private worker: Worker;
+	private preventRestart = false;
+	private promise: Promise<void>;
 
 	public state = State.closed;
 	public remote: WorkerHandle;
@@ -36,20 +38,44 @@ export default class Runner extends Service {
 	}
 
 	async start() {
-		this.logger.info('Setup runner');
-
 		this.state = State.opening;
-		this.worker = new Worker(`void require('${require.resolve('./worker')}').start();`, {
+		this.worker = new Worker(`void require('${require.resolve('./worker')}').start(${JSON.stringify(this.config.resourceLimits)});`, {
 			eval: true,
 			workerData: {},
 			resourceLimits: this.config.resourceLimits,
 		});
 		this.remote = wrap(this.worker);
+
+		await this.remote.start();
 		if (this.config.bootstrap)
 			await this.remote.eval(await fs.readFile(this.config.bootstrap, 'utf8'));
 
+		this.logger.info('Worker started');
 		this.state = State.opened;
+
+		this.worker.on('exit', (code) => {
+			this.state = State.closed;
+			this.logger.debug('Worker exited with code', code);
+			if (!this.preventRestart) this.promise = this.start();
+		});
 	}
 
-	// TODO: stop, restart, error handling for worker
+	async restart() {
+		this.state = State.closing;
+		await this.worker?.terminate();
+		await this.promise;
+	}
+
+	private beforeExit = () => {
+		this.preventRestart = true;
+	};
+
+	stop = async () => {
+		this.state = State.closing;
+		this.beforeExit();
+		process.off('beforeExit', this.beforeExit);
+		await this.worker?.terminate();
+	};
+
+	// TODO: error handling for worker
 }

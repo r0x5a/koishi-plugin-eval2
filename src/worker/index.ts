@@ -1,3 +1,4 @@
+import type { ResourceLimits } from 'node:worker_threads';
 import type { DisposableFail, DisposableResult, QuickJSContext, QuickJSRuntime, QuickJSWASMModule } from 'quickjs-emscripten';
 
 import { formatWithOptions } from 'node:util';
@@ -12,6 +13,10 @@ let vm: QuickJSContext;
 
 const isErr = <S, F>(x: DisposableResult<S, F>): x is DisposableFail<F> => 'error' in x;
 export class WorkerHandle {
+	async start() { // TODO
+		return 'qwq';
+	}
+
 	async eval(code: string) {
 		const deadline = Date.now() + 1000;
 		vm.runtime.setInterruptHandler(shouldInterruptAfterDeadline(deadline));
@@ -30,12 +35,12 @@ export class WorkerHandle {
 	}
 }
 
-export async function start() {
+export async function start(limits: ResourceLimits) {
 	quickJS = await getQuickJS();
 	runtime = quickJS.newRuntime({ // TODO: Configurable resource limits
 		// NOTE: This is not actually working, see: https://github.com/justjake/quickjs-emscripten/pull/207
-		maxStackSizeBytes: 128 * 1024, // 128KiB
-		memoryLimitBytes: 128 * 1024 * 1024, // 128MiB
+		maxStackSizeBytes: limits.stackSizeMb * 1024 * 1024, // 16KiB
+		memoryLimitBytes: limits.maxOldGenerationSizeMb * 1024 * 1024, // 16MiB
 	});
 	vm = runtime.newContext();
 
