@@ -78,6 +78,7 @@ export async function apply(ctx: Context, config: Config) {
 		}
 
 		ctx.command('evaluate.restart', '重启子线程', { hidden: true, authority: 5 })
+			.alias('evaluate.r')
 			.action(async () => {
 				await ctx.runner.restart();
 				return '子线程已重启。';
