@@ -3,6 +3,7 @@ import type { ResourceLimits } from 'node:worker_threads';
 
 import { } from '@koishijs/plugin-help';
 import { h, Schema } from 'koishi';
+import { inspect } from 'node:util';
 
 import Runner from './runner';
 
@@ -52,12 +53,12 @@ export async function apply(ctx: Context, config: Config) {
 				if (rest.length) {
 					// Workaround for https://github.com/koishijs/koishi/issues/1473
 					// This won't always work as expected, but it's better than nothing.
-					// bug input: > -1+'          '.length // outputs 0, but should be 2
+					// bug input: > -1+'          '.length // outputs 0, but should be 9
 					payload = [payload, ...rest].join(' ');
 				}
 				if (!payload) return '请输入要执行的代码。';
 				try {
-					let content = await ctx.runner.remote.eval(payload);
+					let content = await ctx.runner.remote.eval(payload, 'index.js');
 					if (content) {
 						content = content
 							.split('\n')

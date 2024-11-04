@@ -1,6 +1,7 @@
 import type { ResourceLimits } from 'node:worker_threads';
 import type { DisposableFail, DisposableResult, QuickJSContext, QuickJSRuntime, QuickJSWASMModule } from 'quickjs-emscripten';
 
+import { h } from 'koishi';
 import { formatWithOptions } from 'node:util';
 import { parentPort } from 'node:worker_threads';
 import { getQuickJS, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
@@ -17,18 +18,18 @@ export class WorkerHandle {
 		return 'qwq';
 	}
 
-	async eval(code: string) {
+	async eval(code: string, filename: string) {
 		const deadline = Date.now() + 1000;
 		vm.runtime.setInterruptHandler(shouldInterruptAfterDeadline(deadline));
 
-		const result = vm.evalCode(code, 'index.js', { type: 'global' });
+		const result = vm.evalCode(code, filename, { type: 'global' });
 		let str: string;
 		if (!isErr(result)) {
 			str = formatWithOptions({ depth: 1 }, vm.dump(result.value));
 			result.value.dispose();
 		} else {
 			const err: Error = vm.dump(result.error);
-			str = `${err.name}: ${err.message}\n${err.stack}`;
+			str = h.escape(`${err.name}: ${err.message}\n${err.stack}`);
 			result.error.dispose();
 		}
 		return str;

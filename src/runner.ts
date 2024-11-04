@@ -48,7 +48,7 @@ export default class Runner extends Service {
 
 		await this.remote.start();
 		if (this.config.bootstrap)
-			await this.remote.eval(await fs.readFile(this.config.bootstrap, 'utf8'));
+			await this.remote.eval(await fs.readFile(this.config.bootstrap, 'utf8'), 'init.js');
 
 		this.logger.info('Worker started');
 		this.state = State.opened;
