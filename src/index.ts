@@ -46,7 +46,7 @@ export async function apply(ctx: Context, config: Config) {
 			return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		}
 
-		const cmd = ctx.command('evaluate <code:rawtext>', '执行 JavaScript', { strictOptions: true })
+		const cmd = ctx.command('evaluate <code:rawtext>', '执行 JavaScript', { strictOptions: true }) // TODO: allow other elements (e.g. faces)
 			.alias('eval')
 			.action(async (_, payload?: string, ...rest) => {
 				if (rest.length) {
@@ -66,6 +66,13 @@ export async function apply(ctx: Context, config: Config) {
 							.slice(0, config.outputLimits.maxChars);
 					}
 
+					// TODO: Add configurable allowed element types, filter for children, etc.
+					for (const el of h.parse(content)) {
+						if (el.type !== 'text' && el.type !== 'face')
+							return `输出包含不支持的元素：${JSON.stringify(el.type)}。`;
+						if (el.children.length)
+							return `输出包含不支持的内容："children"。`;
+					}
 					return content;
 				} catch (e) {
 					logger.warn(e);
